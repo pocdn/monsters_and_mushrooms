@@ -4,7 +4,7 @@
 Mushroom_and_Monsters -- a python+pygame based remake of the Atari
 arcade version of Millipede.
 
-Copyright 2007 Donald E. Llopis (machinezilla@gmail.com)
+Copyright 2007 Donald E. Llopis (thetofucube@gmail.com)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -152,6 +152,9 @@ class Game:
     def init_vars(self):
         # init game objects
         self.keys = [False, False, False, False, False]
+        self.trackball_status = False
+        self.trackball_X_INC = 0.0
+        self.trackball_Y_INC = 0.0
         self.score = 0
         self.prev_score = 0
         self.cur_level = 0
@@ -416,6 +419,12 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            elif event.type == pygame.JOYBALLMOTION:
+                # JOYBALLMOTION event has only three elements; joy, ball, rel
+                self.trackball_status = True
+                self.trackball_X_INC, self.trackball_Y_INC = event.rel
+                self.trackball_X_INC *= 3.0
+                self.trackball_Y_INC *= 3.0
             elif event.type == pygame.JOYAXISMOTION:
                 #print "move pad: ", event.joy, event.axis, event.value
                 if event.axis == 1:
@@ -1331,6 +1340,24 @@ class Player(pygame.sprite.Sprite):
                 return
 
         # update player position and launch missiles
+
+        # Trackball motion
+        if  self.game.trackball_status == True:
+            # LEFT-RIGHT Trackball motion
+            tmp_x = x - self.game.trackball_X_INC
+            self.tmp_rect.topleft = tmp_x, y
+            if not self.game.mushroom_field.player_collision( self.tmp_rect ):
+                x = x - self.game.trackball_X_INC
+
+            # UP-DOWN Trackball motion
+            tmp_y = y - self.game.trackball_Y_INC
+            self.tmp_rect.topleft = x, tmp_y
+            if not self.game.mushroom_field.player_collision( self.tmp_rect ):
+                y = y - self.game.trackball_Y_INC
+
+            # reset since handled trackball impulse
+            self.game.trackball_status = False
+
         # LEFT
         if keys[0]:
             tmp_x = x - Player.X_INC
@@ -2170,9 +2197,8 @@ class MushroomField:
         m_list = []
 
         index = (y * MushroomField.FIELD_WIDTH) + x
-        assert (index > -1) and \
-        (index < MushroomField.MAX_MUSHROOMS), \
-        "Index out of bounds: %d" % index
+        if not ( (index > -1) and (index < MushroomField.MAX_MUSHROOMS) ):
+            return False
         i = self.m_idx[index]
         m = self.m_arr[i]
         if (m['hp'] > 0) or (m['flower']):
@@ -2181,6 +2207,8 @@ class MushroomField:
         x += 1
         if x < MushroomField.FIELD_WIDTH:
             index = (y * MushroomField.FIELD_WIDTH) + x
+            if not ( (index > -1) and (index < MushroomField.MAX_MUSHROOMS) ):
+                return False
             i = self.m_idx[index]
             m = self.m_arr[i]
             if (m['hp'] > 0) or (m['flower']):
@@ -2189,12 +2217,16 @@ class MushroomField:
             y += 1
             if y < MushroomField.FIELD_HEIGHT:
                 index = (y * MushroomField.FIELD_WIDTH) + x
+                if not ( (index > -1) and (index < MushroomField.MAX_MUSHROOMS) ):
+                    return False
                 i = self.m_idx[index]
                 m = self.m_arr[i]
                 if (m['hp'] > 0) or (m['flower']):
                     m_list.append(self.m_pos[index])
                 x -= 1
                 index = (y * MushroomField.FIELD_WIDTH) + x
+                if not ( (index > -1) and (index < MushroomField.MAX_MUSHROOMS) ):
+                    return False
                 i = self.m_idx[index]
                 m = self.m_arr[i]
                 if (m['hp'] > 0) or (m['flower']):
@@ -2204,6 +2236,8 @@ class MushroomField:
             y += 1
             if y < MushroomField.FIELD_HEIGHT:
                 index = (y * MushroomField.FIELD_WIDTH) + x
+                if not ( (index > -1) and (index < MushroomField.MAX_MUSHROOMS) ):
+                    return False
                 i = self.m_idx[index]
                 m = self.m_arr[i]
                 if (m['hp'] > 0) or (m['flower']):
