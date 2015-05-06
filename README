@@ -10,6 +10,7 @@ Controls:
 =========
 
 Move Player - Arrow Keys
+            - A SDL recognized JoyBallMotion device ie trackball
 Fire Missle - Left-Cntrl, Space
 Exit Game   - ESC
 
